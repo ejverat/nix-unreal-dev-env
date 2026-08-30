@@ -1,0 +1,6 @@
+# Nix
+result
+.direnv/
+
+# Unreal Engine (se clona aparte desde GitHub de Epic; pesa cientos de GB)
+UnrealEngine/
