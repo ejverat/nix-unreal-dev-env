@@ -116,6 +116,7 @@
           zip
           which
           file
+          xdg-user-dirs      # evita el aviso "xdg-user-dir: command not found" del editor
           m4
           autoconf
           automake
