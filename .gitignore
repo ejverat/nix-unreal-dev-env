@@ -2,5 +2,5 @@
 result
 .direnv/
 
-# Unreal Engine (se clona aparte desde GitHub de Epic; pesa cientos de GB)
+# Unreal Engine (cloned separately from Epic's GitHub; hundreds of GB)
 UnrealEngine/

@@ -1,126 +1,127 @@
-# Unreal Engine dev environment (Nix)
+# nix-unreal-dev-env
 
-Entorno de desarrollo **reproducible** con [Nix flakes](https://nixos.wiki/wiki/Flakes)
-para programar en **Unreal Engine 5.x** (probado con **5.8.2**) compilado desde
-fuente en **NixOS / Linux**.
+A **reproducible** [Nix flake](https://nixos.wiki/wiki/Flakes) development
+environment for building **Unreal Engine 5.x** (tested with **5.8.2**) from
+source on **NixOS / Linux**.
 
-## Requisitos previos
+## Prerequisites
 
-- **Nix** con *flakes* habilitado (en NixOS ya está). Para otras distros:
+- **Nix** with *flakes* enabled (already the case on NixOS). Other distros:
   https://nixos.wiki/wiki/Flakes#Enable_flakes
-- **Acceso al código fuente de Unreal**: vincula tu cuenta de Epic Games con
-  GitHub (https://www.unrealengine.com/account/connections) y únete a la
-  organización `EpicGames`. El repo es privado y sin esto el `git clone`
-  fallará.
+- **Access to Unreal Engine's source**: link your Epic Games account to GitHub
+  (https://www.unrealengine.com/account/connections) and join the `EpicGames`
+  organization. The repository is private, so the `git clone` below will fail
+  without it.
 
-## Replicar en otro equipo (desde cero)
+## Replicate on a new machine (from scratch)
 
 ```bash
-# 1. Clona este repositorio
-git clone <URL-de-este-repo> ~/Projects/UnrealGames
+# 1. Clone this repository
+git clone git@github.com:ejverat/nix-unreal-dev-env.git ~/Projects/UnrealGames
 cd ~/Projects/UnrealGames
 
-# 2. Entra al shell FHS (la primera vez tarda: descarga el toolchain y las
-#    librerías, y construye el rootfs FHS ~600 paquetes)
+# 2. Enter the FHS shell (slow the first time: it downloads the toolchain and
+#    libraries and builds an FHS rootfs with ~600 packages)
 nix develop
 
-# 3. Clona y compila Unreal (dentro del shell FHS)
+# 3. Clone and build Unreal (inside the FHS shell)
 git clone https://github.com/EpicGames/UnrealEngine.git
 cd UnrealEngine
-./Setup.sh                 # descarga dependencias + toolchain de Epic (~10-20 GB)
-./GenerateProjectFiles.sh  # genera el Makefile
-make                       # compila el editor (varias horas)
+./Setup.sh                 # downloads Epic's dependencies + toolchain (~10-20 GB)
+./GenerateProjectFiles.sh  # generates the Makefile
+make                       # builds the editor (several hours)
 ```
 
-> 💡 La compilación es incremental: si se interrumpe, vuelve a ejecutar `make`
-> y continúa donde quedó.
+> 💡 The build is incremental: if it gets interrupted, re-run `make` and it
+> resumes where it left off.
 
-## Los dos shells
+## The two shells
 
-| Comando | Qué es | Para qué |
+| Command | What it is | Use for |
 |---|---|---|
-| `nix develop` | Shell **FHS** (por defecto) | Clonar y **compilar** Unreal |
-| `nix develop .#editor` | Shell plano (sin FHS) | Editor, clangd, tareas C++ |
+| `nix develop` | **FHS** shell (default) | Cloning and **building** Unreal |
+| `nix develop .#editor` | Plain shell (no FHS) | Editor, clangd, C++ work |
 
-### Por qué hace falta el shell FHS
+### Why the FHS shell is needed
 
-Los scripts de Unreal usan el *shebang* `#!/bin/bash` y sus binarios
-precompilados enlazan contra rutas estándar de Linux (`/lib`, `/usr/lib`,
-`/lib64/ld-linux-…`). En NixOS esas rutas no existen fuera de un entorno FHS.
-El shell FHS (basado en `buildFHSEnv`) monta `/bin/bash`, `/usr/bin/env`,
-`/lib`, `/usr/lib` y el linker estándar, además de todas las dependencias de
-runtime del editor (SDL2, Vulkan, X11/Wayland, audio, fuentes, ICU, CEF/GTK…).
+Unreal's scripts use `#!/bin/bash` shebangs, and its prebuilt binaries link
+against standard Linux paths (`/lib`, `/usr/lib`, `/lib64/ld-linux-…`). On
+NixOS those paths don't exist outside an FHS environment. The FHS shell
+(built with `buildFHSEnv`) mounts `/bin/bash`, `/usr/bin/env`, `/lib`,
+`/usr/lib` and the standard dynamic linker, plus all of the editor's runtime
+dependencies (SDL2, Vulkan, X11/Wayland, audio, fonts, ICU, CEF/GTK, …).
 
-> ⚠️ Ejecuta `./Setup.sh`, `./GenerateProjectFiles.sh` y `make` **siempre
-> dentro de `nix develop`**. Fuera fallan con
+> ⚠️ Run `./Setup.sh`, `./GenerateProjectFiles.sh` and `make` **always inside
+> `nix develop`**. Outside it they fail with
 > `bad interpreter: /bin/bash: no such file or directory`.
 
-### Comando puntual dentro del FHS
+### One-off command inside the FHS
 
 ```bash
 nix run .# -- -c './Setup.sh'
 ```
 
-## Compilar sin `-j`
+## Build without `-j`
 
-**No uses `make -j`**. El Makefile de UE lanza un target por job y cada uno
-invoca UnrealBuildTool (UBT), que solo admite **una instancia** (mutex global);
-con `-j` chocan y fallan con `Result: Failed (ConflictingInstance)`. El
-paralelismo lo gestiona UBT/UBA internamente, así que basta con `make`.
+**Do not use `make -j`.** UE's Makefile launches one target per job, and each
+one invokes UnrealBuildTool (UBT), which only allows a **single instance**
+(global mutex). With `-j` they collide and fail with
+`Result: Failed (ConflictingInstance)`. Parallelism is handled internally by
+UBT/UBA, so just run `make`.
 
-Para compilar un proyecto concreto (en vez de todo el editor):
+To build a specific project instead of the whole editor:
 
 ```bash
-./Engine/Build/BatchFiles/Linux/Build.sh MiProyecto Linux Development
+./Engine/Build/BatchFiles/Linux/Build.sh MyProject Linux Development
 ```
 
-## Lanzar el editor
+## Launch the editor
 
 ```bash
 cd ~/Projects/UnrealGames
 nix develop
 cd UnrealEngine
 
-# Prueba sin GPU (headless)
+# Headless smoke test (no GPU)
 Engine/Binaries/Linux/UnrealEditor -nullrhi -unattended -nosplash -log
 
-# Con interfaz gráfica
+# With the graphical interface
 Engine/Binaries/Linux/UnrealEditor
 ```
 
-## IDE / editor de código
+## IDE / code editor
 
-- **clangd** viene incluido. Para autocompletado, genera la *compile database*:
+- **clangd** is included. For autocompletion, generate the compile database:
   ```bash
-  ./Engine/Build/BatchFiles/Linux/Build.sh MiProyecto Linux Development \
+  ./Engine/Build/BatchFiles/Linux/Build.sh MyProject Linux Development \
     -Mode=GenerateClangDatabase
   ```
-  Esto genera `compile_commands.json` en la raíz del proyecto.
-- Con **VS Code**: instala la extensión `clangd` y apunta al
-  `compile_commands.json` generado.
-- **direnv** (opcional): el `.envrc` incluido apunta al shell **ligero**
-  (`.#editor`) para que direnv sea rápido. El FHS se usa con `nix develop`, no
-  con direnv (el FHS monta un *namespace* bwrap que no se puede exportar como
-  variables de entorno).
+  This creates `compile_commands.json` at the project root.
+- **VS Code**: install the `clangd` extension and point it at the generated
+  `compile_commands.json`.
+- **direnv** (optional): the included `.envrc` points at the **light**
+  (`.#editor`) shell so direnv stays fast. The FHS shell is used via
+  `nix develop`, not direnv, because the FHS mounts a bwrap namespace that
+  can't be exported as environment variables.
 
-## Notas técnicas
+## Technical notes
 
-- **Toolchain**: UE 5.x descarga su propio clang (20.x) en `Setup.sh`, así que
-  el clang 19 del shell es solo para trabajo C++ general.
-- **`.NET`**: UnrealBuildTool usa .NET 8; el flake lo incluye y fija
-  `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1` para evitar el fallo de ICU.
-- **Nixpkgs**: fijado a `nixos-26.05`. Para la última versión, cambia la URL del
-  input `nixpkgs` a `nixos-unstable` y ejecuta `nix flake update`.
-- **Ruta de Unreal**: descomenta y ajusta `UE_ROOT` en el `profile` del
-  `flake.nix` si quieres esa variable de entorno disponible.
+- **Toolchain**: UE 5.x downloads its own clang (20.x) in `Setup.sh`, so the
+  shell's clang 19 is only for general C++ work.
+- **`.NET`**: UnrealBuildTool uses .NET 8; the flake includes it and sets
+  `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1` to avoid the ICU failure.
+- **Nixpkgs**: pinned to `nixos-26.05`. For the latest version, change the
+  `nixpkgs` input URL to `nixos-unstable` and run `nix flake update`.
+- **Unreal path**: uncomment and adjust `UE_ROOT` in the `profile` of
+  `flake.nix` if you want that environment variable available.
 
-## Estructura del repo
+## Repository layout
 
 ```
 .
-├── flake.nix     # definición del entorno (FHS + editor)
-├── flake.lock    # dependencias fijadas (reproducibilidad)
-├── .envrc        # direnv -> shell editor (opcional)
-├── .gitignore    # excluye UnrealEngine/ (se clona aparte)
+├── flake.nix     # environment definition (FHS + editor shells)
+├── flake.lock    # pinned inputs (reproducibility)
+├── .envrc        # direnv -> editor shell (optional)
+├── .gitignore    # excludes UnrealEngine/ (cloned separately)
 └── README.md
 ```

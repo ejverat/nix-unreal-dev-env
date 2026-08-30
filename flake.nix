@@ -1,9 +1,9 @@
 {
-  description = "Entorno de desarrollo reproducible para Unreal Engine 5.x (probado con 5.8) en NixOS/Linux";
+  description = "Reproducible Unreal Engine 5.x development environment (tested with 5.8) on NixOS/Linux";
 
   inputs = {
-    # NixOS 26.05 (estable), alineado con tu sistema. Cambia a "nixos-unstable"
-    # si quieres las últimas versiones de las herramientas.
+    # NixOS 26.05 (stable). Switch to "nixos-unstable" if you want the
+    # latest versions of the tools.
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
     flake-utils.url = "github:numtide/flake-utils";
   };
@@ -14,11 +14,11 @@
         pkgs = import nixpkgs { inherit system; };
 
         # ------------------------------------------------------------------
-        # Dependencias de build/runtime que Unreal Engine necesita en Linux.
-        # (buildInputs: sus librerías acaban en LD_LIBRARY_PATH del shell)
+        # Build/runtime dependencies that Unreal Engine needs on Linux.
+        # (buildInputs: their libraries end up in the shell's LD_LIBRARY_PATH)
         # ------------------------------------------------------------------
         ueRuntimeDeps = with pkgs; [
-          # Gráficos / GPU (OpenGL + Vulkan)
+          # Graphics / GPU (OpenGL + Vulkan)
           mesa
           libglvnd
           vulkan-headers
@@ -30,7 +30,7 @@
           libpulseaudio
           jack2
 
-          # Ventanas / input / Wayland / X11
+          # Windowing / input / Wayland / X11
           SDL2
           wayland
           wayland-protocols
@@ -49,14 +49,14 @@
           libxtst
           libxcb
 
-          # Fuentes / texto
+          # Fonts / text
           fontconfig
           freetype
 
-          # Input / dispositivos (libudev)
+          # Input / devices (libudev)
           udev
 
-          # Compresión / imágenes / red / crypto / misc
+          # Compression / images / networking / crypto / misc
           zlib
           libxml2
           libpng
@@ -66,9 +66,9 @@
           openssl
           curl
           dbus
-          icu                 # ICU: lo necesita el .NET de UE (GitDependencies/UBT)
+          icu                 # ICU: required by UE's .NET tooling (GitDependencies/UBT)
 
-          # CEF / GTK (navegador embebido del editor: EpicWebHelper)
+          # CEF / GTK (the editor's embedded browser: EpicWebHelper)
           glib
           gtk3
           gdk-pixbuf
@@ -81,13 +81,13 @@
           nspr                # libnspr4
           expat
           libdrm
-          libgbm              # libgbm.so.1 (mesa, salida separada)
+          libgbm              # libgbm.so.1 (mesa, separate output)
           libxext
           libffi
         ];
 
         # ------------------------------------------------------------------
-        # Herramientas de compilación (nativeBuildInputs: en el PATH)
+        # Build tools (nativeBuildInputs: available on PATH)
         # ------------------------------------------------------------------
         buildTools = with pkgs; [
           # Build system
@@ -95,12 +95,12 @@
           cmake
           ninja
           pkg-config
-          gcc                 # libstdc++ y compilación de dependencias nativas
+          gcc                 # libstdc++ and native dependency compilation
           gdb
           lldb
           patch
 
-          # Utilidades que usan los scripts de UE (Setup.sh, etc.)
+          # Utilities used by UE's scripts (Setup.sh, etc.)
           git
           git-lfs
           python3
@@ -116,7 +116,7 @@
           zip
           which
           file
-          xdg-user-dirs      # evita el aviso "xdg-user-dir: command not found" del editor
+          xdg-user-dirs      # avoids "xdg-user-dir: command not found" in the editor
           m4
           autoconf
           automake
@@ -124,26 +124,26 @@
           bison
           flex
 
-          # UnrealBuildTool en UE 5.3+ usa .NET 8
+          # UnrealBuildTool in UE 5.3+ uses .NET 8
           dotnet-sdk_8
         ];
 
         # ------------------------------------------------------------------
-        # Herramientas de desarrollo (editor, LSP, comodidades)
+        # Developer tools (editor, LSP, conveniences)
         # ------------------------------------------------------------------
         devTools = with pkgs; [
           ripgrep
           fd
           fzf
           jq
-          bear                # genera compile_commands.json para builds externos
+          bear                # generates compile_commands.json for external builds
         ];
 
         # ------------------------------------------------------------------
-        # devShell "plano" (sin FHS): útil para el editor/LSP (clangd) y
-        # tareas de C++ fuera del build de Unreal. Para COMPILAR UE usa el
-        # shell FHS (mkUeFhsEnv), que resuelve los shebangs #!/bin/bash y
-        # las rutas estándar (/lib, /usr/lib, /lib64/ld-linux-...).
+        # Plain (non-FHS) devShell: useful for the editor/LSP (clangd) and
+        # C++ work outside Unreal's build. To BUILD Unreal use the FHS shell
+        # (mkUeFhsEnv), which provides #!/bin/bash shebangs and standard paths
+        # (/lib, /usr/lib, /lib64/ld-linux-...).
         # ------------------------------------------------------------------
         mkUePlainShell = { name, clang, clang-tools, lld }:
           pkgs.mkShell {
@@ -159,12 +159,12 @@
               export LC_ALL=en_US.UTF-8
               export LOCALE_ARCHIVE="${pkgs.glibcLocales}/lib/locale/locale-archive"
 
-              # Toolchain de C++ que usa Unreal (clang + lld)
+              # C++ toolchain used by Unreal (clang + lld)
               export CC=clang
               export CXX=clang++
               export LD=lld
 
-              # Directorio raíz de Unreal (ajústalo a tu clon):
+              # Unreal root directory (adjust to your clone):
               # export UE_ROOT="$HOME/Projects/UnrealGames/UnrealEngine"
 
               printf '\n'
@@ -173,27 +173,27 @@
               printf '\033[1;36m  clang:  %s\033[0m\n' "$(${clang}/bin/clang --version | head -n1)"
               printf '\033[1;36m  dotnet: %s\033[0m\n' "$(dotnet --version 2>/dev/null || echo 'n/d')"
               printf '\033[1;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m\n'
-              printf '\n  Pasos típicos: Setup.sh -> GenerateProjectFiles.sh -> make\n\n'
+              printf '\n  Typical steps: Setup.sh -> GenerateProjectFiles.sh -> make\n\n'
             '';
           };
 
         # ------------------------------------------------------------------
-        # Entorno FHS (buildFHSEnv): proporciona /bin/bash, /usr/bin/env,
-        # /lib, /usr/lib y el linker dinámico estándar. Es OBLIGATORIO para
-        # ejecutar Setup.sh / GenerateProjectFiles.sh / make de Unreal, cuyos
-        # scripts usan shebang #!/bin/bash y descargan binarios precompilados
-        # enlazados contra rutas FHS.
-        #   .env  -> para `nix develop`
-        #   (out) -> launcher `bin/<name>` para `nix run`
+        # FHS environment (buildFHSEnv): provides /bin/bash, /usr/bin/env,
+        # /lib, /usr/lib and the standard dynamic linker. REQUIRED to run
+        # Unreal's Setup.sh / GenerateProjectFiles.sh / make, whose scripts
+        # use #!/bin/bash shebangs and download prebuilt binaries linked
+        # against FHS paths.
+        #   .env  -> for `nix develop`
+        #   (out) -> `bin/<name>` launcher for `nix run`
         # ------------------------------------------------------------------
         mkUeFhsEnv = { name, clang, clang-tools, lld }:
           pkgs.buildFHSEnv {
             inherit name;
 
-            # Programas disponibles en /bin y /usr/bin
+            # Programs available in /bin and /usr/bin
             targetPkgs = _: buildTools ++ devTools ++ [ clang clang-tools lld ];
 
-            # Librerías disponibles en /lib y /usr/lib
+            # Libraries available in /lib and /usr/lib
             multiPkgs = _: ueRuntimeDeps;
 
             runScript = "bash";
@@ -205,11 +205,12 @@
               export CXX=clang++
               export LD=lld
 
-              # .NET de UE (GitDependencies, UnrealBuildTool) falla sin ICU;
-              # el modo invariant evita el crash "Couldn't find a valid ICU".
+              # UE's .NET tooling (GitDependencies, UnrealBuildTool) fails
+              # without ICU; invariant mode avoids the
+              # "Couldn't find a valid ICU" crash.
               export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
 
-              # Ajusta la ruta de tu clon de Unreal:
+              # Unreal root directory (adjust to your clone):
               # export UE_ROOT="$HOME/Projects/UnrealGames/UnrealEngine"
 
               printf '\n'
@@ -218,16 +219,16 @@
               printf '\033[1;36m  clang:  %s\033[0m\n' "$(${clang}/bin/clang --version | head -n1)"
               printf '\033[1;36m  dotnet: %s\033[0m\n' "$(dotnet --version 2>/dev/null || echo 'n/d')"
               printf '\033[1;36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m\n'
-              printf '\n  /bin/bash y /usr/bin/env disponibles. Ya puedes:\n'
+              printf '\n  /bin/bash and /usr/bin/env are available. You can now:\n'
               printf '    ./Setup.sh && ./GenerateProjectFiles.sh && make\n\n'
             '';
           };
 
       in
       {
-        # Shell FHS (por defecto): para clonar y COMPILAR Unreal.
-        # Nota: UE 5.x descarga su propio toolchain en Setup.sh (clang 20.x),
-        # así que el clang 19 del shell es solo para trabajo C++ general.
+        # FHS shell (default): for cloning and BUILDING Unreal.
+        # Note: UE 5.x downloads its own toolchain in Setup.sh (clang 20.x),
+        # so the shell's clang 19 is only for general C++ work.
         devShells.default = (mkUeFhsEnv {
           name = "ue5";
           clang = pkgs.llvmPackages_19.clang;
@@ -235,7 +236,7 @@
           lld = pkgs.llvmPackages_19.lld;
         }).env;
 
-        # Shell plano (sin FHS), para el editor/LSP/clangd
+        # Plain shell (no FHS), for the editor/LSP/clangd
         devShells.editor = mkUePlainShell {
           name = "ue5-editor";
           clang = pkgs.llvmPackages_19.clang;
@@ -243,7 +244,7 @@
           lld = pkgs.llvmPackages_19.lld;
         };
 
-        # Launcher FHS para comandos puntuales: `nix run .# -- -c '...'`
+        # FHS launcher for one-off commands: `nix run .# -- -c '...'`
         packages.default = mkUeFhsEnv {
           name = "ue5";
           clang = pkgs.llvmPackages_19.clang;
@@ -251,7 +252,7 @@
           lld = pkgs.llvmPackages_19.lld;
         };
 
-        # Formateador para el propio flake
+        # Formatter for the flake itself
         formatter = pkgs.alejandra;
       });
 }
