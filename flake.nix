@@ -116,6 +116,7 @@
           zip
           which
           file
+          util-linux         # lscpu (UBT queries logical/physical core counts on Linux)
           xdg-user-dirs      # avoids "xdg-user-dir: command not found" in the editor
           m4
           autoconf
