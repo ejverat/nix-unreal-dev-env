@@ -143,13 +143,28 @@ Engine/Binaries/Linux/UnrealEditor -NoRaytracing /path/to/Project.uproject
 - **Unreal path**: uncomment and adjust `UE_ROOT` in the `profile` of
   `flake.nix` if you want that environment variable available.
 
+## Troubleshooting
+
+### The editor opens the project browser instead of my project
+
+If passing a `.uproject` path opens the browser instead of the project, the
+project's `EngineAssociation` is empty. Set it to a non-empty GUID (e.g. the
+one used by a project created with the same source engine):
+
+```json
+{
+  "EngineAssociation": "CB9931A7-838D-4FB4-95F2-F7FC78EEBF93"
+}
+```
+
 ## Repository layout
 
 ```
 .
-├── flake.nix     # environment definition (FHS + editor shells)
-├── flake.lock    # pinned inputs (reproducibility)
-├── .envrc        # direnv -> editor shell (optional)
-├── .gitignore    # excludes UnrealEngine/ (cloned separately)
+├── flake.nix             # environment definition (FHS + editor shells)
+├── flake.lock            # pinned inputs (reproducibility)
+├── .envrc                # direnv -> editor shell (optional)
+├── .gitignore            # excludes UnrealEngine/ (cloned separately)
+├── run-editor-nvidia.sh  # NVIDIA offload launcher (-NoRaytracing)
 └── README.md
 ```
