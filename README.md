@@ -89,6 +89,28 @@ Engine/Binaries/Linux/UnrealEditor -nullrhi -unattended -nosplash -log
 Engine/Binaries/Linux/UnrealEditor
 ```
 
+### Hybrid graphics (Intel + NVIDIA) — recommended
+
+On laptops with an Intel iGPU + NVIDIA GPU (Optimus), the editor may default
+to the weak Intel GPU, causing **tooltip rendering artifacts** and
+**`VK_ERROR_DEVICE_LOST`** crashes. Force the NVIDIA GPU:
+
+```bash
+cd ~/Projects/UnrealGames
+nix develop
+./run-editor-nvidia.sh
+```
+
+The helper script routes rendering to the NVIDIA GPU via PRIME render
+offload. You can also do it manually:
+
+```bash
+export __NV_PRIME_RENDER_OFFLOAD=1
+export __GLX_VENDOR_LIBRARY_NAME=nvidia
+export VK_ICD_FILENAMES=/run/opengl-driver/share/vulkan/icd.d/nvidia_icd.json
+Engine/Binaries/Linux/UnrealEditor
+```
+
 ## IDE / code editor
 
 - **clangd** is included. For autocompletion, generate the compile database:
