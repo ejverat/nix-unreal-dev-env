@@ -42,6 +42,9 @@ fi
 
 # IMPORTANT: the project path MUST be the first command-line token. UE only
 # recognizes the project from the first non-flag token (or -project=...), so
-# flags must come AFTER it. -NoRaytracing works around the known UE 5.8 Linux
-# Vulkan bug (VK_ERROR_DEVICE_LOST); the GTX 1650 has no RT cores anyway.
-exec "$EDITOR_BIN" "$PROJECT" -NoRaytracing "$@"
+# flags must come AFTER it.
+#   -NoRaytracing: workaround for the known UE 5.8 Linux Vulkan bug
+#                  (VK_ERROR_DEVICE_LOST); the GTX 1650 has no RT cores anyway.
+#   -NoSlateAsynchronousShaderCompilation: reduces Slate/tooltip rendering
+#                  artifacts on Linux.
+exec "$EDITOR_BIN" "$PROJECT" -NoRaytracing -NoSlateAsynchronousShaderCompilation "$@"
