@@ -2,6 +2,9 @@
 # Launch UnrealEditor on the discrete NVIDIA GPU via PRIME render offload.
 # Run this INSIDE the FHS dev shell (`nix develop`).
 #
+# Usage:
+#   ./run-editor-nvidia.sh /path/to/Project.uproject [extra UnrealEditor flags]
+#
 # Addresses, on hybrid-graphics (Optimus) laptops:
 #   - Slate/tooltip rendering artifacts
 #   - VK_ERROR_DEVICE_LOST crashes (known UE 5.8 Linux Vulkan bug)
@@ -18,6 +21,14 @@ if [ ! -x "$EDITOR_BIN" ]; then
   exit 1
 fi
 
+if [ $# -lt 1 ]; then
+  echo "Usage: $0 /path/to/Project.uproject [extra UnrealEditor flags]" >&2
+  echo "Example: $0 /home/user/Projects/bot-arena/BotArena.uproject" >&2
+  exit 1
+fi
+
+PROJECT="$1"; shift
+
 # Route rendering to the NVIDIA GPU instead of the integrated Intel GPU.
 export __NV_PRIME_RENDER_OFFLOAD=1
 export __GLX_VENDOR_LIBRARY_NAME=nvidia
@@ -29,8 +40,8 @@ if [ -f "$NVIDIA_ICD" ]; then
   export VK_ICD_FILENAMES="$NVIDIA_ICD"
 fi
 
-# -NoRaytracing: workaround for the known UE 5.8 Linux Vulkan bug that causes
-# VK_ERROR_DEVICE_LOST (device fault during present/swapchain). The GTX 1650
-# has no RT cores, so software raytracing is buggy and slow anyway.
-# Remove this flag if you prefer raytracing (Lumen) and don't hit the crash.
-exec "$EDITOR_BIN" -NoRaytracing "$@"
+# IMPORTANT: the project path MUST be the first command-line token. UE only
+# recognizes the project from the first non-flag token (or -project=...), so
+# flags must come AFTER it. -NoRaytracing works around the known UE 5.8 Linux
+# Vulkan bug (VK_ERROR_DEVICE_LOST); the GTX 1650 has no RT cores anyway.
+exec "$EDITOR_BIN" "$PROJECT" -NoRaytracing "$@"
