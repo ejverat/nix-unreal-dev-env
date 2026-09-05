@@ -98,17 +98,23 @@ to the weak Intel GPU, causing **tooltip rendering artifacts** and
 ```bash
 cd ~/Projects/UnrealGames
 nix develop
-./run-editor-nvidia.sh
+./run-editor-nvidia.sh /path/to/Project.uproject
 ```
 
 The helper script routes rendering to the NVIDIA GPU via PRIME render
-offload. You can also do it manually:
+offload, and also passes **`-NoRaytracing`** — a workaround for a
+[known UE 5.8 Linux Vulkan bug](https://forums.unrealengine.com/t/ue-5-8-release-instant-vulkan-crash-vk-error-device-lost-on-linux-with-rtx-3090-ti-nvidia-driver/2729632)
+that causes `VK_ERROR_DEVICE_LOST` (device fault during present/swapchain),
+even on dedicated GPUs. The GTX 1650 has no RT cores, so disabling raytracing
+is appropriate regardless.
+
+Manual equivalent:
 
 ```bash
 export __NV_PRIME_RENDER_OFFLOAD=1
 export __GLX_VENDOR_LIBRARY_NAME=nvidia
 export VK_ICD_FILENAMES=/run/opengl-driver/share/vulkan/icd.d/nvidia_icd.json
-Engine/Binaries/Linux/UnrealEditor
+Engine/Binaries/Linux/UnrealEditor -NoRaytracing /path/to/Project.uproject
 ```
 
 ## IDE / code editor

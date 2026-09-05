@@ -2,10 +2,10 @@
 # Launch UnrealEditor on the discrete NVIDIA GPU via PRIME render offload.
 # Run this INSIDE the FHS dev shell (`nix develop`).
 #
-# Fixes, on hybrid-graphics (Optimus) laptops:
+# Addresses, on hybrid-graphics (Optimus) laptops:
 #   - Slate/tooltip rendering artifacts
-#   - VK_ERROR_DEVICE_LOST crashes
-# by avoiding the underpowered Intel integrated GPU.
+#   - VK_ERROR_DEVICE_LOST crashes (known UE 5.8 Linux Vulkan bug)
+# by (a) using the NVIDIA GPU and (b) disabling raytracing (-NoRaytracing).
 set -euo pipefail
 
 # Resolve the Unreal Engine root: $UE_ROOT, or a sibling UnrealEngine/ dir.
@@ -29,4 +29,8 @@ if [ -f "$NVIDIA_ICD" ]; then
   export VK_ICD_FILENAMES="$NVIDIA_ICD"
 fi
 
-exec "$EDITOR_BIN" "$@"
+# -NoRaytracing: workaround for the known UE 5.8 Linux Vulkan bug that causes
+# VK_ERROR_DEVICE_LOST (device fault during present/swapchain). The GTX 1650
+# has no RT cores, so software raytracing is buggy and slow anyway.
+# Remove this flag if you prefer raytracing (Lumen) and don't hit the crash.
+exec "$EDITOR_BIN" -NoRaytracing "$@"
